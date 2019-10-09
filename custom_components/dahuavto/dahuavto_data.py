@@ -100,10 +100,11 @@ class DahuaVTOData(object):
 
                 for item in lines:
                     data_item_arr = item.split('=')
-                    data_key = data_item_arr[0]
-                    data_value = data_item_arr[1]
+                    if len(data_item_arr) > 1:
+                        data_key = data_item_arr[0]
+                        data_value = data_item_arr[1]
 
-                    attributes[data_key] = data_value
+                        attributes[data_key] = data_value
 
             self._attributes = attributes
 
