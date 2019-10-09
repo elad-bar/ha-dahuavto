@@ -1,0 +1,8 @@
+{
+    "domain": "dahuavto",
+    "name": "Dahua VTO Integration",
+    "documentation": "https://github.com/elad-bar/ha-dahuavto/blob/master/README.md",
+    "dependencies": [],
+    "codeowners": ["@elad-bar"],
+    "requirements": []
+}
