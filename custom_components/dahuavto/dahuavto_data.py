@@ -41,7 +41,7 @@ class DahuaVTOData(object):
 
         self._base_url = None
         self._last_update = None
-        self._data = None
+        self._data = {}
 
         def vto_refresh(event_time):
             """Call Wifi Bell to refresh information."""
