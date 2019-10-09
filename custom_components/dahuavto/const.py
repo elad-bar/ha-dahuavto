@@ -24,7 +24,8 @@ NOTIFICATION_TITLE = '{0} Setup'.format(DEFAULT_NAME)
 
 RING_TIME = 10
 
-ATTR_LAST_EVENT_TIME = 'Last Ring'
+ATTR_LAST_RING = 'Last Ring'
+ATTR_LAST_UPDATE = 'Last Update'
 
 OPEN_GATE_URL = '/cgi-bin/accessControl.cgi?action=openDoor&channel=1&UserID=101&Type=Remote'
 VIDEO_TALK_LOG_URL = '/cgi-bin/recordFinder.cgi?action=find&name=VideoTalkLog'

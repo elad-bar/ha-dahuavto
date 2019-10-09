@@ -40,7 +40,6 @@ class DahuaVTOData(object):
         self._unavailable = False
 
         self._base_url = None
-        self._last_update = None
         self._data = {}
 
         def vto_refresh(event_time):
@@ -117,11 +116,10 @@ class DahuaVTOData(object):
     def update_video_talk_log(self):
         try:
             content = self.vto_http_request(VIDEO_TALK_LOG_URL)
+            last_ring = None
 
             if content is not None:
                 self.parse(content)
-
-                self._last_update = datetime.now()
 
                 content = self.vto_http_request(VIDEO_TALK_LOG_URL)
 
@@ -141,7 +139,9 @@ class DahuaVTOData(object):
                         delta_seconds = (current_time - create_date_time).total_seconds()
 
                         self._is_ringing = delta_seconds < RING_TIME
-                        self._last_update = current_time
+
+                        if last_ring is None or create_date_time > last_ring:
+                            last_ring = create_date_time
 
                         log_message = f'Current time: {current_time}, Last ring: {create_date_time},' \
                                       f' Delta:{delta_seconds}'
@@ -151,7 +151,8 @@ class DahuaVTOData(object):
                         else:
                             _LOGGER.debug(f'update - {log_message}')
 
-                        self._attributes[ATTR_LAST_EVENT_TIME] = current_time
+                    self._attributes[ATTR_LAST_RING] = last_ring
+                    self._attributes[ATTR_LAST_UPDATE] = current_time
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
