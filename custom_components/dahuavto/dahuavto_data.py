@@ -117,6 +117,7 @@ class DahuaVTOData(object):
         try:
             content = self.vto_http_request(VIDEO_TALK_LOG_URL)
             last_ring = None
+            last_ring_data = None
 
             if content is not None:
                 self.parse(content)
@@ -142,6 +143,7 @@ class DahuaVTOData(object):
 
                         if last_ring is None or create_date_time > last_ring:
                             last_ring = create_date_time
+                            last_ring_data = item
 
                         log_message = f'Current time: {current_time}, Last ring: {create_date_time},' \
                                       f' Delta:{delta_seconds}'
@@ -153,6 +155,9 @@ class DahuaVTOData(object):
 
                     self._attributes[ATTR_LAST_RING] = last_ring
                     self._attributes[ATTR_LAST_UPDATE] = current_time
+
+                    for key in last_ring_data:
+                        self._attributes[key] = last_ring_data[key]
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
