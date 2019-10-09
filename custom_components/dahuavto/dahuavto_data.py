@@ -228,7 +228,7 @@ class DahuaVTOData(object):
     def create_vto_ring_sensor(self):
         entity_id = BINARY_SENSOR_ENTITY_ID.format(slugify(self._name), SENSOR_TYPE_RING.lower())
         state = STATE_OFF
-        attributes = self.get_attributes(SENSOR_TYPE_AVAILABLE)
+        attributes = self.get_attributes(SENSOR_TYPE_RING)
 
         if self._is_ringing:
             state = STATE_ON
