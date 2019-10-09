@@ -52,7 +52,7 @@ def setup(hass, config):
         _LOGGER.error(f'Error while initializing Dahua VTO, Exception: {str(ex)}, Line: {line_number}')
 
         hass.components.persistent_notification.create(
-            'Error: {str(ex)}<br />You will need to restart hass after fixing.',
+            f'Error: {str(ex)}<br />You will need to restart hass after fixing.',
             title=NOTIFICATION_TITLE,
             notification_id=NOTIFICATION_ID)
 

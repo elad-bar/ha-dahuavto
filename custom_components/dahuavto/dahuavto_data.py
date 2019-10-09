@@ -65,11 +65,10 @@ class DahuaVTOData(object):
 
         self.update_system_information()
 
-    def initialize_events(self, vto_connect, vto_disconnect, vto_refresh, interval):
+    def initialize_events(self, vto_refresh, interval):
         track_time_interval(self._hass, vto_refresh, interval)
 
-        self._hass.bus.listen_once(EVENT_HOMEASSISTANT_START, vto_connect)
-        self._hass.bus.listen_once(EVENT_HOMEASSISTANT_STOP, vto_disconnect)
+        self._hass.bus.listen_once(EVENT_HOMEASSISTANT_START, vto_refresh)
 
     def vto_http_request(self, command):
         try:
