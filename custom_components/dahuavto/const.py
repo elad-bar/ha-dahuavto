@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-VERSION = '1.0.3'
+VERSION = '1.0.4'
 
 DOMAIN = 'dahuavto'
 DATA_VTO = 'data_{0}'.format(DOMAIN)

@@ -5,8 +5,9 @@ import logging
 
 import requests
 
-from homeassistant.const import (EVENT_HOMEASSISTANT_START, EVENT_HOMEASSISTANT_STOP,
-                                 STATE_ON, STATE_OFF)
+from homeassistant.const import (EVENT_HOMEASSISTANT_START,
+                                 STATE_ON,
+                                 STATE_OFF)
 
 from homeassistant.helpers.event import track_time_interval
 from requests.auth import HTTPBasicAuth
@@ -70,22 +71,30 @@ class DahuaVTOData(object):
         self._hass.bus.listen_once(EVENT_HOMEASSISTANT_START, vto_refresh)
 
     def vto_http_request(self, command):
+        connected = False
+        result = None
+
         try:
+
             url = f"{self._base_url}{command}"
 
             response = requests.get(url, timeout=10, auth=self._auth)
 
-            response.raise_for_status()
+            if response.status_code > 400:
+                response.raise_for_status()
+            if response.status_code == 400:
+                _LOGGER.info(f"VTO Request to {command} failed due to Bad Request")
 
-            self._connected = True
             result = response.text
+            connected = True
+
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(f'Failed to get response from VTO, Error: {ex}, Line: {line_number}')
-            self._connected = False
-            result = None
+            _LOGGER.error(f'VTO Request to {command} failed, Error: {ex}, Line: {line_number}')
+
+        self._connected = connected
 
         return result
 
@@ -122,42 +131,37 @@ class DahuaVTOData(object):
             if content is not None:
                 self.parse(content)
 
-                content = self.vto_http_request(VIDEO_TALK_LOG_URL)
+                current_time = datetime.now()
 
-                if content is not None:
-                    self.parse(content)
+                for key in self._data:
+                    item = self._data[key]
 
-                    current_time = datetime.now()
+                    create_time = int(item.get("CreateTime", 0))
 
-                    for key in self._data:
-                        item = self._data[key]
+                    create_date_time = datetime.fromtimestamp(create_time - (3 * 60 * 60))
+                    item["CreatedDate"] = create_date_time
 
-                        create_time = int(item.get("CreateTime", 0))
+                    delta_seconds = (current_time - create_date_time).total_seconds()
 
-                        create_date_time = datetime.fromtimestamp(create_time - (3 * 60 * 60))
-                        item["CreatedDate"] = create_date_time
+                    self._is_ringing = delta_seconds < RING_TIME
 
-                        delta_seconds = (current_time - create_date_time).total_seconds()
+                    if last_ring is None or create_date_time > last_ring:
+                        last_ring = create_date_time
+                        last_ring_data = item
 
-                        self._is_ringing = delta_seconds < RING_TIME
+                    log_message = f'Current time: {current_time}, Last ring: {create_date_time},' \
+                                  f' Delta:{delta_seconds}'
 
-                        if last_ring is None or create_date_time > last_ring:
-                            last_ring = create_date_time
-                            last_ring_data = item
+                    if self._is_ringing:
+                        _LOGGER.info(f'update - Ringing, {log_message}')
+                    else:
+                        _LOGGER.debug(f'update - {log_message}')
 
-                        log_message = f'Current time: {current_time}, Last ring: {create_date_time},' \
-                                      f' Delta:{delta_seconds}'
+                self._attributes[ATTR_LAST_RING] = last_ring
+                self._attributes[ATTR_LAST_UPDATE] = current_time
 
-                        if self._is_ringing:
-                            _LOGGER.info(f'update - Ringing, {log_message}')
-                        else:
-                            _LOGGER.debug(f'update - {log_message}')
-
-                    self._attributes[ATTR_LAST_RING] = last_ring
-                    self._attributes[ATTR_LAST_UPDATE] = current_time
-
-                    for key in last_ring_data:
-                        self._attributes[key] = last_ring_data[key]
+                for key in last_ring_data:
+                    self._attributes[key] = last_ring_data[key]
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -217,7 +221,7 @@ class DahuaVTOData(object):
         for key in self._attributes:
             attributes[key] = self._attributes[key]
 
-        attributes["device_class"] = SENSOR_TYPES[SENSOR_TYPE_AVAILABLE]
+        attributes["device_class"] = SENSOR_TYPES[device_class]
 
         return attributes
 
