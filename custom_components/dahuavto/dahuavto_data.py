@@ -4,14 +4,12 @@ from datetime import datetime
 import logging
 
 import requests
-
-from homeassistant.const import (EVENT_HOMEASSISTANT_START,
-                                 STATE_ON,
-                                 STATE_OFF)
-
-from homeassistant.helpers.event import track_time_interval
 from requests.auth import HTTPBasicAuth
+
+from homeassistant.const import (STATE_ON, STATE_OFF)
+from homeassistant.helpers.event import async_call_later, async_track_time_interval
 from homeassistant.util import slugify
+
 from .const import *
 
 REQUIREMENTS = ['aiohttp']
@@ -43,20 +41,7 @@ class DahuaVTOData(object):
         self._base_url = None
         self._data = {}
 
-        def vto_refresh(event_time):
-            """Call Wifi Bell to refresh information."""
-            _LOGGER.debug(f'Updating Wifi Bell component, at {event_time}')
-            self.update()
-
-        def open_gate(event_time):
-            """Call Wifi Bell to refresh information."""
-            _LOGGER.debug(f'Open WifiBell gate, at {event_time}')
-            self.vto_open_gate()
-
         self.initialize()
-        self.initialize_events(vto_refresh, SCAN_INTERVAL)
-
-        self._hass.services.register(DOMAIN, 'open', open_gate)
 
     def initialize(self):
         self._auth = requests.auth.HTTPDigestAuth(self._username, self._password)
@@ -65,10 +50,21 @@ class DahuaVTOData(object):
 
         self.update_system_information()
 
-    def initialize_events(self, vto_refresh, interval):
-        track_time_interval(self._hass, vto_refresh, interval)
+        async_track_time_interval(self._hass, self.async_update, SCAN_INTERVAL)
 
-        self._hass.bus.listen_once(EVENT_HOMEASSISTANT_START, vto_refresh)
+        async_call_later(self._hass, 5, self.async_finalize)
+
+    async def async_finalize(self, event_time):
+        _LOGGER.debug(f"async_finalize called at {event_time}")
+
+        self._hass.services.async_register(DOMAIN, 'open', self.vto_open_gate)
+
+        self.update()
+
+    async def async_update(self, event_time):
+        _LOGGER.debug(f"async_update called at {event_time}")
+
+        self.update()
 
     def vto_http_request(self, command):
         connected = False
@@ -78,7 +74,7 @@ class DahuaVTOData(object):
 
             url = f"{self._base_url}{command}"
 
-            response = requests.get(url, timeout=10, auth=self._auth)
+            response = requests.get(url, timeout=5, auth=self._auth)
 
             if response.status_code > 400:
                 response.raise_for_status()
@@ -92,7 +88,7 @@ class DahuaVTOData(object):
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(f'VTO Request to {command} failed, Error: {ex}, Line: {line_number}')
+            _LOGGER.error(f'VTO Request to {command} failed, Error: {str(ex)}, Line: {line_number}')
 
         self._connected = connected
 
@@ -169,7 +165,7 @@ class DahuaVTOData(object):
 
             _LOGGER.error(f'Failed to update VTO talk log, Error: {ex}, Line: {line_number}')
 
-    def vto_open_gate(self):
+    def vto_open_gate(self, service_data):
         try:
             self.vto_http_request(OPEN_GATE_URL)
         except Exception as ex:
@@ -233,7 +229,7 @@ class DahuaVTOData(object):
         if self._connected:
             state = STATE_ON
 
-        self._hass.states.set(entity_id, state, attributes)
+        self._hass.states.async_set(entity_id, state, attributes)
 
     def create_vto_ring_sensor(self):
         entity_id = BINARY_SENSOR_ENTITY_ID.format(slugify(self._name), SENSOR_TYPE_RING.lower())
@@ -243,4 +239,4 @@ class DahuaVTOData(object):
         if self._is_ringing:
             state = STATE_ON
 
-        self._hass.states.set(entity_id, state, attributes)
+        self._hass.states.async_set(entity_id, state, attributes)

@@ -1,0 +1,21 @@
+{
+  "config": {
+    "title": "Dahua VTO",
+    "step": {
+      "user": {
+        "title": "Set up Dahua VTO",
+        "data": {
+          "host": "Host",
+          "name": "Name",
+          "port": "Port",
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "abort": {
+      "already_setup": "Setup already completed",
+      "one_instance_only": "Only one intergration supported"
+    }
+  }
+}

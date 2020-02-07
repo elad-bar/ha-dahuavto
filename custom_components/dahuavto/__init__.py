@@ -4,56 +4,55 @@ For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/WifiBell/
 """
 import logging
-import sys
 
-import voluptuous as vol
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (CONF_NAME, CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD)
-
-from homeassistant.helpers import config_validation as cv
+from homeassistant.core import HomeAssistant
 
 from .const import *
 from .dahuavto_data import DahuaVTOData
 
 _LOGGER = logging.getLogger(__name__)
 
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Required(CONF_HOST): cv.string,
-        vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.string,
-        vol.Required(CONF_USERNAME): cv.string,
-        vol.Required(CONF_PASSWORD): cv.string,
-    }),
-}, extra=vol.ALLOW_EXTRA)
+
+async def async_setup(hass, config):
+    return True
 
 
-def setup(hass, config):
-    """Set up an Wifi Bell component."""
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up Spotify from a config entry."""
+    _LOGGER.debug(f"Starting async_setup_entry of {DOMAIN}")
+    entry_data = entry.data
 
-    try:
-        conf = config[DOMAIN]
+    name = entry_data.get(CONF_NAME)
+    host = entry_data.get(CONF_HOST)
+    port = entry_data.get(CONF_PORT, DEFAULT_PORT)
+    username = entry_data.get(CONF_USERNAME)
+    password = entry_data.get(CONF_PASSWORD)
 
-        name = conf.get(CONF_NAME)
-        host = conf.get(CONF_HOST)
-        port = conf.get(CONF_PORT, DEFAULT_PORT)
-        username = conf.get(CONF_USERNAME)
-        password = conf.get(CONF_PASSWORD)
+    wifi_bell_data = DahuaVTOData(hass, name, host, port, username, password)
 
-        wifi_bell_data = DahuaVTOData(hass, name, host, port, username, password)
+    hass.data[DATA_VTO] = wifi_bell_data
 
-        hass.data[DATA_VTO] = wifi_bell_data
+    return True
 
-        return True
 
-    except Exception as ex:
-        exc_type, exc_obj, tb = sys.exc_info()
-        line_number = tb.tb_lineno
+async def reload_entry(hass, config_entry):
+    """Reload HACS."""
+    await async_unload_entry(hass, config_entry)
+    await async_setup_entry(hass, config_entry)
 
-        _LOGGER.error(f'Error while initializing Dahua VTO, Exception: {str(ex)}, Line: {line_number}')
 
-        hass.components.persistent_notification.create(
-            f'Error: {str(ex)}<br />You will need to restart hass after fixing.',
-            title=NOTIFICATION_TITLE,
-            notification_id=NOTIFICATION_ID)
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload Spotify config entry."""
+    _LOGGER.debug(f"Starting async_unload_entry of {DOMAIN}")
 
-        return False
+    # Unload entities for this entry/device.
+    await hass.config_entries.async_forward_entry_unload(entry, DOMAIN)
+
+    # Cleanup
+    del hass.data[DATA_VTO][entry.entry_id]
+    if not hass.data[DATA_VTO]:
+        del hass.data[DATA_VTO]
+
+    return True
