@@ -30,9 +30,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     username = entry_data.get(CONF_USERNAME)
     password = entry_data.get(CONF_PASSWORD)
 
-    wifi_bell_data = DahuaVTOData(hass, name, host, port, username, password)
+    vto = DahuaVTOData(hass, name, host, port, username, password, entry)
 
-    hass.data[DATA_VTO] = wifi_bell_data
+    await vto.initialize()
+
+    hass.data[DATA_VTO] = vto
 
     return True
 

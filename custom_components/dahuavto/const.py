@@ -1,3 +1,4 @@
+from homeassistant.components.binary_sensor import DOMAIN as DOMAIN_BINARY_SENSOR
 from datetime import timedelta
 
 VERSION = '1.0.4'
@@ -10,9 +11,33 @@ BASE_URL = 'http://{0}:{1}/{2}'
 DEFAULT_DEVICE_CLASS_DEFAULT = 'NONE'
 DEFAULT_DEVICE_CLASS_CONNECTIVITY = 'Connectivity'
 DEFAULT_PORT = 80
+MANUFACTURER = 'Dahua'
 
 SENSOR_TYPE_RING = 'Ring'
 SENSOR_TYPE_AVAILABLE = 'Available'
+
+ENTITY_ICON = 'icon'
+ENTITY_STATE = 'state'
+ENTITY_ATTRIBUTES = 'attributes'
+ENTITY_NAME = 'name'
+ENTITY_MODEL = 'model'
+
+ICON_RING_ON = 'mdi:bell-outline'
+ICON_RING_OFF = 'mdi:bell-off'
+
+ICON_CONNECTED = 'mdi:lan-connect'
+ICON_DISCONNECTED = 'mdi:lan-disconnect'
+
+ICONS = {
+    SENSOR_TYPE_RING: {
+        True: ICON_RING_ON,
+        False: ICON_RING_OFF
+    },
+    SENSOR_TYPE_AVAILABLE: {
+        True: ICON_CONNECTED,
+        False: ICON_DISCONNECTED
+    }
+}
 
 SENSOR_TYPES = {
     SENSOR_TYPE_RING: DEFAULT_DEVICE_CLASS_DEFAULT,

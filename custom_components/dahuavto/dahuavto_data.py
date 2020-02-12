@@ -8,6 +8,7 @@ from requests.auth import HTTPBasicAuth
 
 from homeassistant.const import (STATE_ON, STATE_OFF)
 from homeassistant.helpers.event import async_call_later, async_track_time_interval
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.util import slugify
 
 from .const import *
@@ -20,7 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 class DahuaVTOData(object):
     """The Class for handling the data retrieval."""
 
-    def __init__(self, hass, name, host, port, username, password):
+    def __init__(self, hass, name, host, port, username, password, config_entry):
         """Initialize the data object."""
         self._name = name
         self._host = host
@@ -40,31 +41,42 @@ class DahuaVTOData(object):
 
         self._base_url = None
         self._data = {}
+        self._config_entry = config_entry
 
-        self.initialize()
-
-    def initialize(self):
+    async def initialize(self):
         self._auth = requests.auth.HTTPDigestAuth(self._username, self._password)
 
         self._base_url = f"http://{self._host}:{self._port}"
 
         self.update_system_information()
 
-        async_track_time_interval(self._hass, self.async_update, SCAN_INTERVAL)
+        setup = self._hass.config_entries.async_forward_entry_setup
+
+        self._hass.async_create_task(setup(self._config_entry, DOMAIN_BINARY_SENSOR))
 
         async_call_later(self._hass, 5, self.async_finalize)
 
     async def async_finalize(self, event_time):
         _LOGGER.debug(f"async_finalize called at {event_time}")
 
+        await self.async_update(event_time)
+
         self._hass.services.async_register(DOMAIN, 'open', self.vto_open_gate)
 
-        self.update()
+        async_track_time_interval(self._hass, self.async_update, SCAN_INTERVAL)
 
     async def async_update(self, event_time):
         _LOGGER.debug(f"async_update called at {event_time}")
 
-        self.update()
+        if self._updating:
+            return
+
+        self._updating = True
+        self.update_video_talk_log()
+
+        async_dispatcher_send(self._hass, SIGNAL_UPDATE_VTO)
+
+        self._updating = False
 
     def vto_http_request(self, command):
         connected = False
@@ -201,18 +213,6 @@ class DahuaVTOData(object):
 
             item["CreateDateTime"] = datetime.fromtimestamp(create_time)
 
-    def update(self):
-        if self._updating:
-            return
-
-        self._updating = True
-        self.update_video_talk_log()
-
-        self.create_vto_available_sensor()
-        self.create_vto_ring_sensor()
-
-        self._updating = False
-
     def get_attributes(self, device_class):
         attributes = {}
         for key in self._attributes:
@@ -222,22 +222,16 @@ class DahuaVTOData(object):
 
         return attributes
 
-    def create_vto_available_sensor(self):
-        entity_id = BINARY_SENSOR_ENTITY_ID.format(slugify(self._name), SENSOR_TYPE_AVAILABLE.lower())
-        state = STATE_OFF
-        attributes = self.get_attributes(SENSOR_TYPE_AVAILABLE)
+    def get_sensor_data(self, sensor_type):
+        state = self._is_ringing if sensor_type == SENSOR_TYPE_RING else self._connected
+        icon = ICONS[sensor_type][state]
 
-        if self._connected:
-            state = STATE_ON
+        entity = {
+            ENTITY_NAME: f"{self._name} {sensor_type}",
+            ENTITY_STATE: state,
+            ENTITY_ATTRIBUTES: self.get_attributes(sensor_type),
+            ENTITY_MODEL: self._attributes.get("deviceType", DEFAULT_NAME),
+            ENTITY_ICON: icon
+        }
 
-        self._hass.states.async_set(entity_id, state, attributes)
-
-    def create_vto_ring_sensor(self):
-        entity_id = BINARY_SENSOR_ENTITY_ID.format(slugify(self._name), SENSOR_TYPE_RING.lower())
-        state = STATE_OFF
-        attributes = self.get_attributes(SENSOR_TYPE_RING)
-
-        if self._is_ringing:
-            state = STATE_ON
-
-        self._hass.states.async_set(entity_id, state, attributes)
+        return entity
