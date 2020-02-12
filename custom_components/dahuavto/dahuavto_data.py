@@ -127,17 +127,18 @@ class DahuaVTOData(object):
             if content is not None:
                 self.parse(content)
 
-                current_time = datetime.now()
+                current_time_utc = datetime.utcnow()
 
                 for key in self._data:
                     item = self._data[key]
 
                     create_time = int(item.get("CreateTime", 0))
 
-                    create_date_time = datetime.fromtimestamp(create_time - (3 * 60 * 60))
+                    create_date_time = datetime.fromtimestamp(create_time)
+                    create_date_time_utc = datetime.utcfromtimestamp(create_time)
                     item["CreatedDate"] = create_date_time
 
-                    delta_seconds = (current_time - create_date_time).total_seconds()
+                    delta_seconds = (current_time_utc - create_date_time_utc).total_seconds()
 
                     self._is_ringing = delta_seconds < RING_TIME
 
@@ -145,7 +146,7 @@ class DahuaVTOData(object):
                         last_ring = create_date_time
                         last_ring_data = item
 
-                    log_message = f'Current time: {current_time}, Last ring: {create_date_time},' \
+                    log_message = f'Current time: {current_time_utc}, Last ring: {create_date_time_utc},' \
                                   f' Delta:{delta_seconds}'
 
                     if self._is_ringing:
@@ -154,7 +155,7 @@ class DahuaVTOData(object):
                         _LOGGER.debug(f'update - {log_message}')
 
                 self._attributes[ATTR_LAST_RING] = last_ring
-                self._attributes[ATTR_LAST_UPDATE] = current_time
+                self._attributes[ATTR_LAST_UPDATE] = datetime.now()
 
                 for key in last_ring_data:
                     self._attributes[key] = last_ring_data[key]
