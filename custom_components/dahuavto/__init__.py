@@ -45,21 +45,6 @@ async def reload_entry(hass, config_entry):
     await async_setup_entry(hass, config_entry)
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload Spotify config entry."""
-    _LOGGER.debug(f"Starting async_unload_entry of {DOMAIN}")
-
-    # Unload entities for this entry/device.
-    await hass.config_entries.async_forward_entry_unload(entry, DOMAIN)
-
-    # Cleanup
-    del hass.data[DATA_VTO][entry.entry_id]
-    if not hass.data[DATA_VTO]:
-        del hass.data[DATA_VTO]
-
-    return True
-
-
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
     unload = hass.config_entries.async_forward_entry_unload
