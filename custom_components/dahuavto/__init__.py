@@ -75,11 +75,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 async def async_options_updated(hass: HomeAssistant, entry: ConfigEntry):
     """Triggered by config entry options updates."""
-    entry_data = entry.data
-    name = entry_data.get(CONF_NAME)
-    data = _get_printers(hass)
-
-    if name in data:
-        printer = data[name]
-
-        printer.options = entry.options
+    hass.data[DATA_VTO].options = entry.options
