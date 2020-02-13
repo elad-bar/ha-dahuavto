@@ -58,3 +58,28 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         del hass.data[DATA_VTO]
 
     return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Unload a config entry."""
+    unload = hass.config_entries.async_forward_entry_unload
+
+    await hass.data[DATA_VTO].async_remove()
+
+    hass.async_create_task(unload(entry, DOMAIN_BINARY_SENSOR))
+
+    del hass.data[DATA_VTO]
+
+    return True
+
+
+async def async_options_updated(hass: HomeAssistant, entry: ConfigEntry):
+    """Triggered by config entry options updates."""
+    entry_data = entry.data
+    name = entry_data.get(CONF_NAME)
+    data = _get_printers(hass)
+
+    if name in data:
+        printer = data[name]
+
+        printer.options = entry.options

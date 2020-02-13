@@ -42,6 +42,7 @@ class DahuaVTOData(object):
         self._base_url = None
         self._data = {}
         self._config_entry = config_entry
+        self._remove_async_track_time = None
 
     async def initialize(self):
         self._auth = requests.auth.HTTPDigestAuth(self._username, self._password)
@@ -63,7 +64,15 @@ class DahuaVTOData(object):
 
         self._hass.services.async_register(DOMAIN, 'open', self.vto_open_gate)
 
-        async_track_time_interval(self._hass, self.async_update, SCAN_INTERVAL)
+        self._remove_async_track_time = async_track_time_interval(self._hass, self.async_update, SCAN_INTERVAL)
+
+    async def async_remove(self):
+        _LOGGER.debug(f"async_remove called")
+
+        self._hass.services.async_remove(DOMAIN, 'open')
+
+        if self._remove_async_track_time is not None:
+            self._remove_async_track_time()
 
     async def async_update(self, event_time):
         _LOGGER.debug(f"async_update called at {event_time}")
@@ -139,18 +148,17 @@ class DahuaVTOData(object):
             if content is not None:
                 self.parse(content)
 
-                current_time_utc = datetime.utcnow()
+                current_time = datetime.now()
 
                 for key in self._data:
                     item = self._data[key]
 
                     create_time = int(item.get("CreateTime", 0))
 
-                    create_date_time = datetime.fromtimestamp(create_time)
-                    create_date_time_utc = datetime.utcfromtimestamp(create_time)
+                    create_date_time = datetime.utcfromtimestamp(create_time)
                     item["CreatedDate"] = create_date_time
 
-                    delta_seconds = (current_time_utc - create_date_time_utc).total_seconds()
+                    delta_seconds = (current_time - create_date_time).total_seconds()
 
                     self._is_ringing = delta_seconds < RING_TIME
 
@@ -158,7 +166,7 @@ class DahuaVTOData(object):
                         last_ring = create_date_time
                         last_ring_data = item
 
-                    log_message = f'Current time: {current_time_utc}, Last ring: {create_date_time_utc},' \
+                    log_message = f'Current time: {current_time}, Last ring: {create_date_time},' \
                                   f' Delta:{delta_seconds}'
 
                     if self._is_ringing:
@@ -167,7 +175,7 @@ class DahuaVTOData(object):
                         _LOGGER.debug(f'update - {log_message}')
 
                 self._attributes[ATTR_LAST_RING] = last_ring
-                self._attributes[ATTR_LAST_UPDATE] = datetime.now()
+                self._attributes[ATTR_LAST_UPDATE] = current_time
 
                 for key in last_ring_data:
                     self._attributes[key] = last_ring_data[key]

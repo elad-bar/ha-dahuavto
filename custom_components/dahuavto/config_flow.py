@@ -26,16 +26,16 @@ class DahuaVTOFlowHandler(config_entries.ConfigFlow):
             return self.async_abort(reason="one_instance_only")
 
         fields = {
-            vol.Optional(CONF_NAME, default=DEFAULT_NAME): str,
+            vol.Required(CONF_NAME, default=DEFAULT_NAME): str,
             vol.Required(CONF_HOST): str,
-            vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+            vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
             vol.Required(CONF_USERNAME): str,
             vol.Required(CONF_PASSWORD): str,
         }
 
         if user_input is not None:
             return self.async_create_entry(
-                title=DEFAULT_NAME,
+                title=user_input.get(CONF_NAME, DEFAULT_NAME),
                 data={
                     CONF_NAME: user_input.get(CONF_NAME, DEFAULT_NAME),
                     CONF_HOST: user_input.get(CONF_HOST),

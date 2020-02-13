@@ -46,6 +46,7 @@ class VTOBinarySensor(Entity):
         self._vto = vto
         self._sensor_type = sensor_type
         self._binary_sensor = self._vto.get_sensor_data(self._sensor_type)
+        self._remove_dispatcher = None
 
     @property
     def unique_id(self) -> Optional[str]:
@@ -95,7 +96,11 @@ class VTOBinarySensor(Entity):
 
     async def async_added_to_hass(self):
         """Register callbacks."""
-        async_dispatcher_connect(self._hass, SIGNAL_UPDATE_VTO, self.update_data)
+        self._remove_dispatcher = async_dispatcher_connect(self._hass, SIGNAL_UPDATE_VTO, self.update_data)
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._remove_dispatcher is not None:
+            self._remove_dispatcher()
 
     @callback
     def update_data(self):
