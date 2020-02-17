@@ -170,6 +170,8 @@ class DahuaVTOData(object):
                                   f' Delta:{delta_seconds}'
 
                     if self._is_ringing:
+                        self._hass.bus.fire(f"{DOMAIN}_ring", item)
+
                         _LOGGER.info(f'update - Ringing, {log_message}')
                     else:
                         _LOGGER.debug(f'update - {log_message}')

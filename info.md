@@ -6,8 +6,10 @@ Configuration support single Dahua VTO unit through Configuration -> Integration
 \* Custom component doesn't support YAML configuration!, in case you have used it via configuration.yaml, please remove it <br/>
 \* In case labels in Configuration -> Integrations -> Add new are note being displayed, please delete the custom component and re-download it   
 
+#### Events:
+Upon ring, `dahuavto_ring` event will be triggered, data will be the entire set of attributes of each of the entities created
 
-#### Components:
+#### Entities:
 ###### binary_sensor.dahua_vto_available
 ```
 State: represents whether the unit is online or not

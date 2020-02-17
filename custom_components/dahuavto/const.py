@@ -47,7 +47,7 @@ SENSOR_TYPES = {
 NOTIFICATION_ID = '{0}_notification'.format(DOMAIN)
 NOTIFICATION_TITLE = '{0} Setup'.format(DEFAULT_NAME)
 
-RING_TIME = 10
+RING_TIME = 15
 
 ATTR_LAST_RING = 'Last Ring'
 ATTR_LAST_UPDATE = 'Last Update'
