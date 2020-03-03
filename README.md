@@ -1,7 +1,7 @@
 # Dahua VTO Integration
 
 this integration is depreacted as the call event didn't work fluently,
-instead you can use the DahuaVTO2MQTT to get all events.
+instead you can use the <a href="https://github.com/elad-bar/Dahua">DahuaVTO2MQTT</a> to get all events.
 
 I'm not removing the integration, you can use it to get information from the API of device.
 
